@@ -1,0 +1,57 @@
+========================================
+SARVAGYA - QUICK START GUIDE
+========================================
+
+REQUIREMENTS:
+- Python 3.8+
+- Node.js 16+
+- Google API Key (provided)
+
+SETUP (one-time):
+Windows: setup.bat
+Unix/Mac: bash setup.sh
+
+RUN (every time):
+
+Terminal 1 (Backend):
+  cd backend
+  set GOOGLE_API_KEY=your-api-key  [Windows]
+  export GOOGLE_API_KEY=your-api-key  [Mac/Linux]
+  source venv/bin/activate
+  python main.py
+
+Terminal 2 (Frontend):
+  cd frontend
+  npm run dev
+
+Open browser:
+  http://localhost:3000
+
+USAGE:
+1. Click attachment button or upload zone
+2. Select a trading chart (PNG/JPG/WebP, max 10MB)
+3. Type a question about the chart
+4. Press Ctrl+Enter or click Send
+5. Wait for AI analysis (~5-15 seconds)
+6. Ask follow-up questions to continue conversation
+7. Click "New Chat" to start fresh
+
+TROUBLESHOOTING:
+- "Backend offline" → Make sure backend is running
+- "API key not configured" → Set GOOGLE_API_KEY env var
+- "Can't connect" → Check ports 3000 and 8000 are free
+- Slow analysis → First request is slower (cold start)
+
+DEMO SCRIPT (4 minutes):
+1. Show empty state
+2. Upload a chart
+3. Ask: "Analyze this chart and explain the market structure"
+4. Show loading state
+5. Show real AI analysis
+6. Ask: "What would invalidate this setup?"
+7. Show it understands the context
+8. Click New Chat to reset
+
+========================================
+Built for Hackathon - Ready to Demo
+========================================
