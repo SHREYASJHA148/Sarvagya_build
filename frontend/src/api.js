@@ -1,14 +1,15 @@
 import axios from 'axios'
 
 const LOCAL_API_BASE = 'http://localhost:8000'
-const PROD_API_BASE = globalThis.location?.origin || ''
+const PROD_API_BASE = 'https://sarvagya-buildbackend1-git-main-adu8.vercel.app'
 
+const fallbackBase = import.meta.env.DEV ? '' : PROD_API_BASE
 export const API_BASE_URL = (
   (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.trim()) ||
-  (import.meta.env.DEV ? LOCAL_API_BASE : PROD_API_BASE)
+  fallbackBase
 ).replace(/\/+$/, '')
 
-export const API_BASE = `${API_BASE_URL}/api`
+export const API_BASE = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
 
 export const chatAPI = {
   async chat(message, conversationId, file) {
