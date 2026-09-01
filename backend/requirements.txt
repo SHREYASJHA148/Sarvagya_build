@@ -1,4 +1,4 @@
-﻿google-genai
+google-genai
 fastapi
 uvicorn
 python-dotenv
