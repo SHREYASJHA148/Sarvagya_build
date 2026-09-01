@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import './App.css'
 import ChatContainer from './components/ChatContainer'
-import { chatAPI } from './api'
+import { chatAPI, API_BASE_URL } from './api'
 
 function App() {
   const [conversations, setConversations] = useState([])
@@ -11,6 +11,7 @@ function App() {
   const [error, setError] = useState(null)
   const [backendStatus, setBackendStatus] = useState('checking')
   const [attachment, setAttachment] = useState(null)
+  const [lastFailedRequest, setLastFailedRequest] = useState(null)
 
   // Check backend health on mount
   useEffect(() => {
@@ -20,7 +21,7 @@ function App() {
   const checkBackendHealth = async () => {
     try {
       const health = await chatAPI.health()
-      setBackendStatus(health.status)
+      setBackendStatus(health.services?.agent === 'not_configured' ? 'degraded' : health.status)
     } catch (err) {
       console.error('Backend health check failed:', err)
       setBackendStatus('offline')
@@ -28,37 +29,39 @@ function App() {
   }
 
   const startNewChat = () => {
-    const conversationId = `conv_${Date.now()}`
-    setConversations(prev => [...prev, { id: conversationId, created: new Date() }])
-    setActiveConversation(conversationId)
+    // The server owns conversation IDs.  Keeping this state unset causes the
+    // first submitted message to create a real conversation in one request.
+    setConversations([])
+    setActiveConversation(null)
     setMessages([])
     setError(null)
     setAttachment(null)
   }
 
-  const handleSendMessage = async (message) => {
+  const handleSendMessage = async (message, retryAttachment = attachment) => {
     if (!message.trim()) {
       setError('Message cannot be empty')
       return
     }
 
-    if (!activeConversation) {
-      startNewChat()
-      return
-    }
-
     setError(null)
+    setLastFailedRequest(null)
     setLoading(true)
 
     // Add user message immediately
     setMessages(prev => [...prev, {
       role: 'user',
       content: message,
-      image: attachment
+      image: retryAttachment
     }])
 
     try {
-      const response = await chatAPI.chat(message, activeConversation, attachment?.file)
+      const response = await chatAPI.chat(message, activeConversation, retryAttachment?.file)
+
+      if (!activeConversation) {
+        setActiveConversation(response.conversation_id)
+        setConversations([{ id: response.conversation_id, created: new Date() }])
+      }
 
       // Add assistant response
       setMessages(prev => [...prev, {
@@ -70,9 +73,16 @@ function App() {
     } catch (err) {
       const errorMessage = err.response?.data?.detail || 'Failed to get response. Please try again.'
       setError(errorMessage)
-      setMessages(prev => prev.filter((_, i) => i !== prev.length - 1)) // Remove pending user message
+      setLastFailedRequest({ message, attachment: retryAttachment })
+      setMessages(prev => prev.slice(0, -1)) // Remove the failed pending user message
     } finally {
       setLoading(false)
+    }
+  }
+
+  const retryLastRequest = () => {
+    if (lastFailedRequest && !loading) {
+      handleSendMessage(lastFailedRequest.message, lastFailedRequest.attachment)
     }
   }
 
@@ -113,17 +123,6 @@ function App() {
 
   return (
     <div className="app">
-      {backendStatus === 'offline' && (
-        <div className="backend-banner error">
-          ⚠️ Backend offline. Please ensure the API server is running on localhost:8000
-        </div>
-      )}
-      {backendStatus === 'degraded' && (
-        <div className="backend-banner warning">
-          ⚠️ Google API key not configured. Chart analysis may not work.
-        </div>
-      )}
-
       <div className="app-layout">
         <ChatContainer
           messages={messages}
@@ -134,6 +133,8 @@ function App() {
           attachment={attachment}
           onAttachmentChange={handleAttachmentChange}
           onRemoveAttachment={handleRemoveAttachment}
+          onDismissError={() => setError(null)}
+          onRetry={lastFailedRequest ? retryLastRequest : null}
           isEmpty={messages.length === 0}
         />
       </div>
