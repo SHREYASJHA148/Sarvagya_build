@@ -1,6 +1,14 @@
 import axios from 'axios'
 
-const API_BASE = '/api'
+const LOCAL_API_BASE = 'http://localhost:8000'
+const PROD_API_BASE = globalThis.location?.origin || ''
+
+export const API_BASE_URL = (
+  (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.trim()) ||
+  (import.meta.env.DEV ? LOCAL_API_BASE : PROD_API_BASE)
+).replace(/\/+$/, '')
+
+export const API_BASE = `${API_BASE_URL}/api`
 
 export const chatAPI = {
   async chat(message, conversationId, file) {
